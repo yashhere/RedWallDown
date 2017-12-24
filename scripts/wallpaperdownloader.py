@@ -4,10 +4,14 @@ import requests
 import praw
 import click
 import subprocess
+import random
+import platform
+import sys
+import time
 from PIL import Image
 from io import BytesIO
 
-wallpaper_directory = '.reddit_wallpapers/'
+wallpaper_directory = '.reddit_wallpapers'
 datapath = ""
 
 ARG_MAP = {
@@ -39,6 +43,7 @@ WM_BKG_SETTERS = {
 
 def setWallpaperInLinux(image_path):
     desktop_environ = os.environ.get('DESKTOP_SESSION', '')
+    print("desktop_environ is:" % desktop_environ)
     if desktop_environ and desktop_environ in WM_BKG_SETTERS:
         wp_program, args, filepath = WM_BKG_SETTERS.get(desktop_environ, [None, None])
         pargs = [wp_program] + args + [filepath % image_path]
@@ -51,7 +56,6 @@ def setWallpaperInLinux(image_path):
         pargs = [wp_program] + args + [filepath % image_path]
         subprocess.call(pargs)
     
-
 def setWallpaperInWindows(image_path):
     SPI_SETDESKWALLPAPER = 20
     ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, image_path, 3)
@@ -61,9 +65,11 @@ def setWallpaperInMac(image_path):
     os.system(osxcmd)
 
 def configure():
+    global datapath
     datapath = os.path.expanduser('~') + "/" + wallpaper_directory
+    # print(datapath)
     if not os.path.exists(datapath):
-        os.makedir(datapath)
+        os.makedirs(datapath)
 
 def refineURL(url):
     if url.endswith('png', 0, len(url)) or url.endswith('jpg', 0, len(url)):
@@ -78,7 +84,7 @@ def refineURL(url):
 
 def wallpaperdownloader(subreddit, count, time):
     reddit = praw.Reddit('bot1', user_agent='testscript by /u/im_y')
-    subreddit = reddit.subreddit(subreddit).hot(limit=6)
+    subreddit = reddit.subreddit(subreddit).hot(limit=1)
     # print(subreddit.__dict__.keys())
 
     downloadLinks = []
@@ -96,8 +102,6 @@ def wallpaperdownloader(subreddit, count, time):
         data['height'] = submission.preview['images'][0]['source']['height']
         downloadLinks.append(data)
 
-    print(downloadLinks)
-
     i = 1
     for link in downloadLinks:
         print("--------------------------------------------------------------------")
@@ -106,14 +110,37 @@ def wallpaperdownloader(subreddit, count, time):
         ext = link['url'].split('.')[-1]
         img = Image.open(BytesIO(response.content))
         # print(img.__dict__.keys())
-        print(img.size)
-        if link['width'] < 1280 or link['height'] < 960:
+        # print(img.size)
+        if link['width'] < 2000 or link['height'] < 1300:
             continue
 
-        with open(datapath + '/' + 'img' + str(i) + '.' + ext, 'wb') as out_file:
+        image_path = datapath + '/' + 'img' + str(i) + '.' + ext
+        print(image_path)
+        with open(image_path, 'wb') as out_file:
             img.save(out_file)
             i = i + 1
 
-if __name__ == '__main__':
-    datapath = configure()
+    print("exiting wallpaperdownloader")
+
+def main():
+    configure()
     wallpaperdownloader()
+
+    print("here")
+
+    image_path = random.choice(os.listdir(datapath))
+
+    print("Selected Image " % image_path)
+    if platform.system() == 'Darwin':
+        setWallpaperInMac(image_path)
+    elif platform.system() == 'Windows':
+        setWallpaperInWindows(image_path)
+    elif platform.system() == 'Linux':
+        print("Selecting Linux")
+        setWallpaperInLinux(image_path)
+    else:
+        print('Platform not recognized')
+        sys.exit()
+
+if __name__ == '__main__':
+    main()
