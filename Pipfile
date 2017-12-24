@@ -8,8 +8,9 @@ verify_ssl = true
 [packages]
 
 requests = "*"
-"beautifulsoup4" = "*"
 praw = "*"
+click = "*"
+pillow = "*"
 
 
 [dev-packages]
