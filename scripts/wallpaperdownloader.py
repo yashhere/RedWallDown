@@ -30,26 +30,36 @@ def wallpaperdownloader(subreddit, count, time):
 
     downloadLinks = []
     for submission in subreddit:
+        data = {}
         url = refineURL(submission.url)
+        
         if url:
-            downloadLinks.append(url)
+            data['url'] = url
+        else:
+            continue
+
+        data['title'] = submission.title
+        data['width'] = submission.preview['images'][0]['source']['width']
+        data['height'] = submission.preview['images'][0]['source']['height']
+        downloadLinks.append(data)
 
     print(downloadLinks)
 
     i = 1
-    # for link in downloadLinks:
-    #     response = requests.get(link, stream=True)
-    #     ext = link.split('.')[-1]
-    #     img = Image.open(BytesIO(response.content))
-    #     # print(img.__dict__.keys())
-    #     print(img.size)
-    #     if img.size[0] < 1024 or img.size[1] < 768:
-    #         continue
+    for link in downloadLinks:
+        print("--------------------------------------------------------------------")
+        print("Downloading image - ", link['title'])
+        response = requests.get(link['url'], stream=True)
+        ext = link['url'].split('.')[-1]
+        img = Image.open(BytesIO(response.content))
+        # print(img.__dict__.keys())
+        print(img.size)
+        if link['width'] < 1280 or link['height'] < 960:
+            continue
 
-    #     with open('img' + str(i) + '.' + ext, 'wb') as out_file:
-    #         img.save(out_file)
-    #         i = i + 1
-    #         print("--------------------------------------------------------------------")
+        with open('img' + str(i) + '.' + ext, 'wb') as out_file:
+            img.save(out_file)
+            i = i + 1
 
 if __name__ == '__main__':
     configure()
