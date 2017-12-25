@@ -7,7 +7,7 @@ import subprocess
 import random
 import platform
 import sys
-import time
+from time import sleep
 from PIL import Image
 from io import BytesIO
 
@@ -15,7 +15,7 @@ wallpaper_directory = '.reddit_wallpapers'
 datapath = ""
 
 ARG_MAP = {
-    'feh': ['feh', ['--bg-center'], '%s'],
+    'feh': ['feh', ['--bg-scale'], '%s'],
     'gnome': ['gsettings',
                 ['set', 'org.gnome.desktop.background', 'picture-uri'],
                 'file://%s'],
@@ -43,7 +43,7 @@ WM_BKG_SETTERS = {
 
 def setWallpaperInLinux(image_path):
     desktop_environ = os.environ.get('DESKTOP_SESSION', '')
-    print("desktop_environ is: %s" % desktop_environ)
+    # print("desktop_environ is: %s" % desktop_environ)
     if desktop_environ and desktop_environ in WM_BKG_SETTERS:
         wp_program, args, filepath = WM_BKG_SETTERS.get(desktop_environ, [None, None])
         pargs = [wp_program] + args + [filepath % image_path]
@@ -77,9 +77,14 @@ def refineURL(url):
     else:
         return ""
 
-def downloadWallpapers(subreddit, count):
+def downloadWallpapers(subreddit, count, sort_method):
     reddit = praw.Reddit('bot1', user_agent='testscript by /u/im_y')
-    subreddit = reddit.subreddit(subreddit).hot(limit=count)
+    if sort_method == "new":
+        subreddit = reddit.subreddit(subreddit).new(limit=count)
+    elif sort_method == "top":
+        subreddit = reddit.subreddit(subreddit).top('week', limit=count)
+    elif sort_method == "controversial":
+        subreddit = reddit.subreddit(subreddit).controversial('week', limit=count)
     # print(subreddit.__dict__.keys())
 
     downloadLinks = []
@@ -99,8 +104,8 @@ def downloadWallpapers(subreddit, count):
 
     i = 1
     for link in downloadLinks:
-        print("--------------------------------------------------------------------")
-        print("Downloading image - ", link['title'])
+        # print("--------------------------------------------------------------------")
+        # print("Downloading image - ", link['title'])
         response = requests.get(link['url'], stream=True)
         ext = link['url'].split('.')[-1]
         img = Image.open(BytesIO(response.content))
@@ -109,33 +114,38 @@ def downloadWallpapers(subreddit, count):
             continue
 
         image_path = datapath + '/' + 'img' + str(i) + '.' + ext
-        print(image_path)
+        # print(image_path)
         with open(image_path, 'wb') as out_file:
             img.save(out_file)
             i = i + 1
 
     print("Number of images downloaded: %d", i)
-    print("finished downloading wallpapers")
+    # print("finished downloading wallpapers")
 
-def redditWallpapers(subreddit, count, time):
-    downloadWallpapers(subreddit, count)
+def redditWallpapers(subreddit, count, time, sort_method):
+    while True:
+        downloadWallpapers(subreddit, count, sort_method)
 
-    image_path = datapath + '/' + random.choice(os.listdir(datapath))
+        image_path = datapath + '/' + random.choice(os.listdir(datapath))
 
-    print("Selected Image %s" % image_path)
-    if platform.system() == 'Darwin':
-        setWallpaperInMac(image_path)
-    elif platform.system() == 'Windows':
-        setWallpaperInWindows(image_path)
-    elif platform.system() == 'Linux':
-        print("Selecting Linux")
-        setWallpaperInLinux(image_path)
-    else:
-        print('Platform not recognized')
-        sys.exit()
+        # print("Selected Image %s" % image_path)
+        print("Setting up wallpaper %s", image_path)
+        if platform.system() == 'Darwin':
+            setWallpaperInMac(image_path)
+        elif platform.system() == 'Windows':
+            setWallpaperInWindows(image_path)
+        elif platform.system() == 'Linux':
+            print("Selecting Linux")
+            setWallpaperInLinux(image_path)
+        else:
+            print('Platform not recognized')
+            sys.exit()
+
+        print("DONE")
+        sleep(time * 60)
 
 def main():
-    description = "Set trending reddit images as wallpapers"
+    description = "Set Wallpapers downloaded from Reddit"
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument("-r", "--subreddit", default="wallpapers", type=str, nargs='?',
@@ -144,14 +154,17 @@ def main():
                         help="Time (in minutes) for each wallpaper")
     parser.add_argument("-count", "--count", type=int, default=20, nargs='?',
                         help="Number of images to download")
+    parser.add_argument("-s", "--sort", default="new", type=str, nargs='?',
+                        help="sort methods, values are new, hot, controversial")
     args = parser.parse_args()
 
     subreddit = args.subreddit
     count = args.count
     duration = args.time
+    sort_method = args.sort
 
     configure()
-    redditWallpapers(subreddit, count, duration)
+    redditWallpapers(subreddit, count, duration, sort_method)
 
 if __name__ == '__main__':
     main()
