@@ -101,3 +101,5 @@ ENV/
 .mypy_cache/
 
 praw.ini
+.vscode/*
+Pipfile.lock
