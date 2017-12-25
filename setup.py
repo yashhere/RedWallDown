@@ -23,7 +23,7 @@ setup(
     install_requires=dependencies,
     entry_points={
         'console_scripts': [
-            'redwalldown = scripts.wallpaperdownloader:wallpaperdownloader',
+            'redwalldown = scripts.wallpaperdownloader:main',
         ],
     },
 )

@@ -2,7 +2,7 @@ import os
 import shutil
 import requests
 import praw
-import click
+import argparse
 import subprocess
 import random
 import platform
@@ -43,7 +43,7 @@ WM_BKG_SETTERS = {
 
 def setWallpaperInLinux(image_path):
     desktop_environ = os.environ.get('DESKTOP_SESSION', '')
-    print("desktop_environ is:" % desktop_environ)
+    print("desktop_environ is: %s" % desktop_environ)
     if desktop_environ and desktop_environ in WM_BKG_SETTERS:
         wp_program, args, filepath = WM_BKG_SETTERS.get(desktop_environ, [None, None])
         pargs = [wp_program] + args + [filepath % image_path]
@@ -55,7 +55,7 @@ def setWallpaperInLinux(image_path):
         wp_program, args, filepath = WM_BKG_SETTERS['i3']
         pargs = [wp_program] + args + [filepath % image_path]
         subprocess.call(pargs)
-    
+
 def setWallpaperInWindows(image_path):
     SPI_SETDESKWALLPAPER = 20
     ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, image_path, 3)
@@ -77,21 +77,16 @@ def refineURL(url):
     else:
         return ""
 
-@click.command()
-@click.option('-c', '--count', default=20, help='number of images to download', nargs=1)
-@click.option('-t', '--time', default=15, help='Time (in minutes) for each wallpaper', nargs=1)
-@click.option('-r', '--subreddit', nargs=1, default="earthporn", help="The subreddit to download wallpapers from, defaults to earthporn")
-
-def wallpaperdownloader(subreddit, count, time):
+def downloadWallpapers(subreddit, count):
     reddit = praw.Reddit('bot1', user_agent='testscript by /u/im_y')
-    subreddit = reddit.subreddit(subreddit).hot(limit=1)
+    subreddit = reddit.subreddit(subreddit).hot(limit=count)
     # print(subreddit.__dict__.keys())
 
     downloadLinks = []
     for submission in subreddit:
         data = {}
         url = refineURL(submission.url)
-        
+
         if url:
             data['url'] = url
         else:
@@ -110,7 +105,6 @@ def wallpaperdownloader(subreddit, count, time):
         ext = link['url'].split('.')[-1]
         img = Image.open(BytesIO(response.content))
         # print(img.__dict__.keys())
-        # print(img.size)
         if link['width'] < 2000 or link['height'] < 1300:
             continue
 
@@ -120,17 +114,15 @@ def wallpaperdownloader(subreddit, count, time):
             img.save(out_file)
             i = i + 1
 
-    print("exiting wallpaperdownloader")
+    print("Number of images downloaded: %d", i)
+    print("finished downloading wallpapers")
 
-def main():
-    configure()
-    wallpaperdownloader()
+def redditWallpapers(subreddit, count, time):
+    downloadWallpapers(subreddit, count)
 
-    print("here")
+    image_path = datapath + '/' + random.choice(os.listdir(datapath))
 
-    image_path = random.choice(os.listdir(datapath))
-
-    print("Selected Image " % image_path)
+    print("Selected Image %s" % image_path)
     if platform.system() == 'Darwin':
         setWallpaperInMac(image_path)
     elif platform.system() == 'Windows':
@@ -141,6 +133,25 @@ def main():
     else:
         print('Platform not recognized')
         sys.exit()
+
+def main():
+    description = "Set trending reddit images as wallpapers"
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument("-r", "--subreddit", default="wallpapers", type=str, nargs='?',
+                        help="The subreddit to download wallpapers from, defaults to earthporn")
+    parser.add_argument("-t", "--time", type=int, default=15, nargs='?',
+                        help="Time (in minutes) for each wallpaper")
+    parser.add_argument("-count", "--count", type=int, default=20, nargs='?',
+                        help="Number of images to download")
+    args = parser.parse_args()
+
+    subreddit = args.subreddit
+    count = args.count
+    duration = args.time
+
+    configure()
+    redditWallpapers(subreddit, count, duration)
 
 if __name__ == '__main__':
     main()
