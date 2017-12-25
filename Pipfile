@@ -9,8 +9,8 @@ verify_ssl = true
 
 requests = "*"
 praw = "*"
-click = "*"
 pillow = "*"
+argparse = "*"
 
 
 [dev-packages]
