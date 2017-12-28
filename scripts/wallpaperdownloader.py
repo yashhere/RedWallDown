@@ -137,19 +137,20 @@ def download_wallpaper(link):
     with open(image_path, 'wb') as out_file:
         img.save(out_file)
         i = i + 1
-    print("Downloaded Image: ", image_path)
-    print("Number of images downloaded: %d", i)
+    # print("Downloaded Image: ", image_path)
+    # print("Number of images downloaded: %d", i)
 
 
 def reddit_wallpapers(subreddit, count, time, sort_method):
     download_links = links(subreddit, count, sort_method)
-    print(len(download_links))
+    # print(len(download_links))
     link = ""
     while True:
         if download_links:
             link = random.choice(download_links)
             download_links.remove(link)
             download_wallpaper(link)
+            # print(len(download_links))
 
         if not link:
             continue
@@ -157,7 +158,7 @@ def reddit_wallpapers(subreddit, count, time, sort_method):
         random.shuffle(os.listdir(datapath))
         image_path = datapath + '/' + random.choice(os.listdir(datapath))
 
-        print("Setting up wallpaper %s", image_path)
+        # print("Setting up wallpaper %s", image_path)
         if platform.system() == 'Darwin':
             set_wallpaper_in_osx(image_path)
         elif platform.system() == 'Windows':
@@ -169,7 +170,7 @@ def reddit_wallpapers(subreddit, count, time, sort_method):
             print('Platform not recognized')
             sys.exit()
 
-        print("DONE")
+        # print("DONE")
         sleep(time * 60)
 
 
@@ -181,7 +182,7 @@ def main():
                         help="The subreddit to download wallpapers from, defaults to earthporn")
     parser.add_argument("-t", "--time", type=int, default=15, nargs='?',
                         help="Time (in minutes) for each wallpaper")
-    parser.add_argument("-count", "--count", type=int, default=5, nargs='?',
+    parser.add_argument("-c", "--count", type=int, default=5, nargs='?',
                         help="Number of images to download")
     parser.add_argument("-s", "--sort", default="new", type=str, nargs='?',
                         help="sort methods, values are new, hot, controversial")
