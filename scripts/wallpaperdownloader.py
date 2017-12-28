@@ -17,14 +17,14 @@ datapath = ""
 ARG_MAP = {
     'feh': ['feh', ['--bg-scale'], '%s'],
     'gnome': ['gsettings',
-                ['set', 'org.gnome.desktop.background', 'picture-uri'],
-                'file://%s'],
+              ['set', 'org.gnome.desktop.background', 'picture-uri'],
+              'file://%s'],
     'cinnamon': ['gsettings',
-                    ['set', 'org.cinnamon.desktop.background', 'picture-uri'],
-                    'file://%s'],
+                 ['set', 'org.cinnamon.desktop.background', 'picture-uri'],
+                 'file://%s'],
     'mate': ['gsettings',
-              ['set', 'org.mate.desktop.background', 'picture-uri'],
-              'file://%s']
+             ['set', 'org.mate.desktop.background', 'picture-uri'],
+             'file://%s']
 }
 
 WM_BKG_SETTERS = {
@@ -41,27 +41,35 @@ WM_BKG_SETTERS = {
     'mate': ARG_MAP['mate']
 }
 
+
 def setWallpaperInLinux(image_path):
     desktop_environ = os.environ.get('DESKTOP_SESSION', '')
     if desktop_environ and desktop_environ in WM_BKG_SETTERS:
-        wp_program, args, filepath = WM_BKG_SETTERS.get(desktop_environ, [None, None])
+        wp_program, args, filepath = WM_BKG_SETTERS.get(
+            desktop_environ, [None, None])
         pargs = [wp_program] + args + [filepath % image_path]
         subprocess.call(pargs)
     elif desktop_environ in ['xfce']:
-        os.system("xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-show -s ''")
-        os.system("xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s '%s'" % image_path)
+        os.system(
+            "xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-show -s ''")
+        os.system(
+            "xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s '%s'" % image_path)
     else:
         wp_program, args, filepath = WM_BKG_SETTERS['i3']
         pargs = [wp_program] + args + [filepath % image_path]
         subprocess.call(pargs)
 
+
 def setWallpaperInWindows(image_path):
     SPI_SETDESKWALLPAPER = 20
-    ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, image_path, 3)
+    ctypes.windll.user32.SystemParametersInfoA(
+        SPI_SETDESKWALLPAPER, 0, image_path, 3)
+
 
 def setWallpaperInMac(image_path):
     osxcmd = 'osascript -e \'tell application "System Events" to set picture of every desktop to "' + image_path + '" \''
     os.system(osxcmd)
+
 
 def configure():
     global datapath
@@ -69,20 +77,23 @@ def configure():
     if not os.path.exists(datapath):
         os.makedirs(datapath)
 
+
 def refineURL(url):
     if url.endswith('png', 0, len(url)) or url.endswith('jpg', 0, len(url)):
         return url
     else:
         return ""
 
+
 def links(subreddit, count, sort_method):
     reddit = praw.Reddit('wallpaper-downloader')
     if sort_method == "new":
-        subreddit = reddit.subreddit(subreddit).new(limit=count+10)
+        subreddit = reddit.subreddit(subreddit).new(limit=count + 10)
     elif sort_method == "top":
-        subreddit = reddit.subreddit(subreddit).top('week', limit=count+10)
+        subreddit = reddit.subreddit(subreddit).top('week', limit=count + 10)
     elif sort_method == "controversial":
-        subreddit = reddit.subreddit(subreddit).controversial('week', limit=count+10)
+        subreddit = reddit.subreddit(
+            subreddit).controversial('week', limit=count + 10)
 
     downloadLinks = []
     for submission in subreddit:
@@ -105,8 +116,10 @@ def links(subreddit, count, sort_method):
 
     return downloadLinks
 
+
 def downloadWallpaper(link):
-    all_images = [int(f.split('.')[0]) for f in os.listdir(datapath) if os.path.isfile(os.path.join(datapath, f))]
+    all_images = [int(f.split('.')[0]) for f in os.listdir(
+        datapath) if os.path.isfile(os.path.join(datapath, f))]
 
     if not all_images:
         i = 1
@@ -127,17 +140,15 @@ def downloadWallpaper(link):
     print("Downloaded Image: ", image_path)
     print("Number of images downloaded: %d", i)
 
+
 def redditWallpapers(subreddit, count, time, sort_method):
     downloadLinks = links(subreddit, count, sort_method)
     print(len(downloadLinks))
     link = ""
     while True:
         if downloadLinks:
-            random.shuffle(downloadLinks)
             link = random.choice(downloadLinks)
-            # print(link)
             downloadLinks.remove(link)
-            # print(len(downloadLinks))
             downloadWallpaper(link)
 
         if link:
@@ -145,7 +156,7 @@ def redditWallpapers(subreddit, count, time, sort_method):
         else:
             continue
 
-        # print(link)
+        random.shuffle(os.listdir(datapath))
         image_path = datapath + '/' + random.choice(os.listdir(datapath))
 
         print("Setting up wallpaper %s", image_path)
@@ -161,7 +172,8 @@ def redditWallpapers(subreddit, count, time, sort_method):
             sys.exit()
 
         print("DONE")
-        sleep(time * 1)
+        sleep(time * 60)
+
 
 def main():
     description = "Set Wallpapers downloaded from Reddit"
