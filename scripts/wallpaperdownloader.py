@@ -117,7 +117,7 @@ def links(subreddit, count, sort_method):
     return download_links
 
 
-def download_wallpaper(link):
+def download_wallpaper(link, width, height):
     all_images = [int(f.split('.')[0]) for f in os.listdir(
         datapath) if os.path.isfile(os.path.join(datapath, f))]
 
@@ -130,7 +130,7 @@ def download_wallpaper(link):
     ext = link['url'].split('.')[-1]
     img = Image.open(BytesIO(response.content))
 
-    if link['width'] < 1920 or link['height'] < 1080:
+    if link['width'] < width or link['height'] < height:
         return ""
 
     image_path = datapath + '/' + str(i) + '.' + ext
@@ -141,8 +141,8 @@ def download_wallpaper(link):
     # print("Number of images downloaded: %d", i)
 
 
-def reddit_wallpapers(subreddit, count, time, sort_method):
-    download_links = links(subreddit, count, sort_method)
+def reddit_wallpapers(subreddit, count, time, sort_method, width, height):
+    download_links = links(subreddit, count, sort_method, width, height)
     # print(len(download_links))
     link = ""
     while True:
@@ -178,23 +178,27 @@ def main():
     description = "Set Wallpapers downloaded from Reddit"
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument("-r", "--subreddit", default="wallpapers", type=str, nargs='?',
+    parser.add_argument("-r", "--subreddit", default="earthporn", type=str, nargs='?',
                         help="The subreddit to download wallpapers from, defaults to earthporn")
     parser.add_argument("-t", "--time", type=int, default=15, nargs='?',
                         help="Time (in minutes) for each wallpaper")
-    parser.add_argument("-c", "--count", type=int, default=5, nargs='?',
+    parser.add_argument("-c", "--count", type=int, default=15, nargs='?',
                         help="Number of images to download")
     parser.add_argument("-s", "--sort", default="new", type=str, nargs='?',
                         help="sort methods, values are new, hot, controversial")
+    parser.add_argument("-w", "--width", default=1920 ,type=int, nargs='?', help="Select minimum width of the images(in px)")
+    parser.add_argument("-h", "--height", default=1080 ,type=int, nargs='?', help="Select minimum height of the images(in px)")
     args = parser.parse_args()
 
     subreddit = args.subreddit
     count = args.count
     duration = args.time
     sort_method = args.sort
+    width = args.width
+    height = args.height
 
     configure()
-    reddit_wallpapers(subreddit, count, duration, sort_method)
+    reddit_wallpapers(subreddit, count, duration, sort_method, width, height)
 
 if __name__ == '__main__':
     main()
