@@ -42,7 +42,7 @@ WM_BKG_SETTERS = {
 }
 
 
-def setWallpaperInLinux(image_path):
+def set_wallpaper_in_linux(image_path):
     desktop_environ = os.environ.get('DESKTOP_SESSION', '')
     if desktop_environ and desktop_environ in WM_BKG_SETTERS:
         wp_program, args, filepath = WM_BKG_SETTERS.get(
@@ -60,13 +60,13 @@ def setWallpaperInLinux(image_path):
         subprocess.call(pargs)
 
 
-def setWallpaperInWindows(image_path):
+def set_wallpaper_in_windows(image_path):
     SPI_SETDESKWALLPAPER = 20
     ctypes.windll.user32.SystemParametersInfoA(
         SPI_SETDESKWALLPAPER, 0, image_path, 3)
 
 
-def setWallpaperInMac(image_path):
+def set_wallpaper_in_osx(image_path):
     osxcmd = 'osascript -e \'tell application "System Events" to set picture of every desktop to "' + image_path + '" \''
     os.system(osxcmd)
 
@@ -78,7 +78,7 @@ def configure():
         os.makedirs(datapath)
 
 
-def refineURL(url):
+def refine_url(url):
     if url.endswith('png', 0, len(url)) or url.endswith('jpg', 0, len(url)):
         return url
     else:
@@ -95,13 +95,13 @@ def links(subreddit, count, sort_method):
         subreddit = reddit.subreddit(
             subreddit).controversial('week', limit=count + 10)
 
-    downloadLinks = []
+    download_links = []
     for submission in subreddit:
         if count == 0:
             break
 
         data = {}
-        url = refineURL(submission.url)
+        url = refine_url(submission.url)
 
         if url:
             data['url'] = url
@@ -112,12 +112,12 @@ def links(subreddit, count, sort_method):
         data['title'] = submission.title
         data['width'] = submission.preview['images'][0]['source']['width']
         data['height'] = submission.preview['images'][0]['source']['height']
-        downloadLinks.append(data)
+        download_links.append(data)
 
-    return downloadLinks
+    return download_links
 
 
-def downloadWallpaper(link):
+def download_wallpaper(link):
     all_images = [int(f.split('.')[0]) for f in os.listdir(
         datapath) if os.path.isfile(os.path.join(datapath, f))]
 
@@ -141,19 +141,17 @@ def downloadWallpaper(link):
     print("Number of images downloaded: %d", i)
 
 
-def redditWallpapers(subreddit, count, time, sort_method):
-    downloadLinks = links(subreddit, count, sort_method)
-    print(len(downloadLinks))
+def reddit_wallpapers(subreddit, count, time, sort_method):
+    download_links = links(subreddit, count, sort_method)
+    print(len(download_links))
     link = ""
     while True:
-        if downloadLinks:
-            link = random.choice(downloadLinks)
-            downloadLinks.remove(link)
-            downloadWallpaper(link)
+        if download_links:
+            link = random.choice(download_links)
+            download_links.remove(link)
+            download_wallpaper(link)
 
-        if link:
-            print("Downloaded Wallpaper")
-        else:
+        if not link:
             continue
 
         random.shuffle(os.listdir(datapath))
@@ -161,12 +159,12 @@ def redditWallpapers(subreddit, count, time, sort_method):
 
         print("Setting up wallpaper %s", image_path)
         if platform.system() == 'Darwin':
-            setWallpaperInMac(image_path)
+            set_wallpaper_in_osx(image_path)
         elif platform.system() == 'Windows':
-            setWallpaperInWindows(image_path)
+            set_wallpaper_in_windows(image_path)
         elif platform.system() == 'Linux':
             print("Selecting Linux")
-            setWallpaperInLinux(image_path)
+            set_wallpaper_in_linux(image_path)
         else:
             print('Platform not recognized')
             sys.exit()
@@ -195,7 +193,7 @@ def main():
     sort_method = args.sort
 
     configure()
-    redditWallpapers(subreddit, count, duration, sort_method)
+    reddit_wallpapers(subreddit, count, duration, sort_method)
 
 if __name__ == '__main__':
     main()
