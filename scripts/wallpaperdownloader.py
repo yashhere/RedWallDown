@@ -43,7 +43,6 @@ WM_BKG_SETTERS = {
 
 def setWallpaperInLinux(image_path):
     desktop_environ = os.environ.get('DESKTOP_SESSION', '')
-    # print("desktop_environ is: %s" % desktop_environ)
     if desktop_environ and desktop_environ in WM_BKG_SETTERS:
         wp_program, args, filepath = WM_BKG_SETTERS.get(desktop_environ, [None, None])
         pargs = [wp_program] + args + [filepath % image_path]
@@ -67,7 +66,6 @@ def setWallpaperInMac(image_path):
 def configure():
     global datapath
     datapath = os.path.expanduser('~') + "/" + wallpaper_directory
-    # print(datapath)
     if not os.path.exists(datapath):
         os.makedirs(datapath)
 
@@ -77,23 +75,26 @@ def refineURL(url):
     else:
         return ""
 
-def downloadWallpapers(subreddit, count, sort_method):
-    reddit = praw.Reddit('bot1', user_agent='testscript by /u/im_y')
+def links(subreddit, count, sort_method):
+    reddit = praw.Reddit('wallpaper-downloader')
     if sort_method == "new":
-        subreddit = reddit.subreddit(subreddit).new(limit=count)
+        subreddit = reddit.subreddit(subreddit).new(limit=count+10)
     elif sort_method == "top":
-        subreddit = reddit.subreddit(subreddit).top('week', limit=count)
+        subreddit = reddit.subreddit(subreddit).top('week', limit=count+10)
     elif sort_method == "controversial":
-        subreddit = reddit.subreddit(subreddit).controversial('week', limit=count)
-    # print(subreddit.__dict__.keys())
+        subreddit = reddit.subreddit(subreddit).controversial('week', limit=count+10)
 
     downloadLinks = []
     for submission in subreddit:
+        if count == 0:
+            break
+
         data = {}
         url = refineURL(submission.url)
 
         if url:
             data['url'] = url
+            count = count - 1
         else:
             continue
 
@@ -102,33 +103,51 @@ def downloadWallpapers(subreddit, count, sort_method):
         data['height'] = submission.preview['images'][0]['source']['height']
         downloadLinks.append(data)
 
-    i = 1
-    for link in downloadLinks:
-        # print("--------------------------------------------------------------------")
-        # print("Downloading image - ", link['title'])
-        response = requests.get(link['url'], stream=True)
-        ext = link['url'].split('.')[-1]
-        img = Image.open(BytesIO(response.content))
-        # print(img.__dict__.keys())
-        if link['width'] < 2000 or link['height'] < 1300:
-            continue
+    return downloadLinks
 
-        image_path = datapath + '/' + 'img' + str(i) + '.' + ext
-        # print(image_path)
-        with open(image_path, 'wb') as out_file:
-            img.save(out_file)
-            i = i + 1
+def downloadWallpaper(link):
+    all_images = [int(f.split('.')[0]) for f in os.listdir(datapath) if os.path.isfile(os.path.join(datapath, f))]
 
+    if not all_images:
+        i = 1
+    else:
+        i = max(all_images) + 1
+
+    response = requests.get(link['url'], stream=True)
+    ext = link['url'].split('.')[-1]
+    img = Image.open(BytesIO(response.content))
+
+    if link['width'] < 1920 or link['height'] < 1080:
+        return ""
+
+    image_path = datapath + '/' + str(i) + '.' + ext
+    with open(image_path, 'wb') as out_file:
+        img.save(out_file)
+        i = i + 1
+    print("Downloaded Image: ", image_path)
     print("Number of images downloaded: %d", i)
-    # print("finished downloading wallpapers")
 
 def redditWallpapers(subreddit, count, time, sort_method):
+    downloadLinks = links(subreddit, count, sort_method)
+    print(len(downloadLinks))
+    link = ""
     while True:
-        downloadWallpapers(subreddit, count, sort_method)
+        if downloadLinks:
+            random.shuffle(downloadLinks)
+            link = random.choice(downloadLinks)
+            # print(link)
+            downloadLinks.remove(link)
+            # print(len(downloadLinks))
+            downloadWallpaper(link)
 
+        if link:
+            print("Downloaded Wallpaper")
+        else:
+            continue
+
+        # print(link)
         image_path = datapath + '/' + random.choice(os.listdir(datapath))
 
-        # print("Selected Image %s" % image_path)
         print("Setting up wallpaper %s", image_path)
         if platform.system() == 'Darwin':
             setWallpaperInMac(image_path)
@@ -142,7 +161,7 @@ def redditWallpapers(subreddit, count, time, sort_method):
             sys.exit()
 
         print("DONE")
-        sleep(time * 60)
+        sleep(time * 1)
 
 def main():
     description = "Set Wallpapers downloaded from Reddit"
@@ -152,7 +171,7 @@ def main():
                         help="The subreddit to download wallpapers from, defaults to earthporn")
     parser.add_argument("-t", "--time", type=int, default=15, nargs='?',
                         help="Time (in minutes) for each wallpaper")
-    parser.add_argument("-count", "--count", type=int, default=20, nargs='?',
+    parser.add_argument("-count", "--count", type=int, default=5, nargs='?',
                         help="Number of images to download")
     parser.add_argument("-s", "--sort", default="new", type=str, nargs='?',
                         help="sort methods, values are new, hot, controversial")
