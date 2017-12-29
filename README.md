@@ -1,7 +1,7 @@
 # Reddit Wallpaper Downloader
 Automatically fetches the latest, top trending and high quality images from reddit and sets them as your desktop wallpaper!
 
-![]()
+<img src="https://i.imgur.com/0lzlhLv.png" />
 
 ## Installation
 ```bash
@@ -60,6 +60,5 @@ Now add the following line to your cron file
 ```
 
 ### License
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
