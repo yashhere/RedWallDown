@@ -85,7 +85,7 @@ def refine_url(url):
         return ""
 
 
-def links(subreddit, count, sort_method):
+def links(subreddit, count, sort_method, width, height):
     reddit = praw.Reddit('wallpaper-downloader')
     if sort_method == "new":
         subreddit = reddit.subreddit(subreddit).new(limit=count + 10)
@@ -137,19 +137,19 @@ def download_wallpaper(link, width, height):
     with open(image_path, 'wb') as out_file:
         img.save(out_file)
         i = i + 1
-    # print("Downloaded Image: ", image_path)
+    print("Downloaded Image: ", image_path)
     # print("Number of images downloaded: %d", i)
 
 
 def reddit_wallpapers(subreddit, count, time, sort_method, width, height):
     download_links = links(subreddit, count, sort_method, width, height)
-    # print(len(download_links))
+    print(len(download_links))
     link = ""
     while True:
         if download_links:
             link = random.choice(download_links)
             download_links.remove(link)
-            download_wallpaper(link)
+            download_wallpaper(link, width, height)
             # print(len(download_links))
 
         if not link:
@@ -158,7 +158,7 @@ def reddit_wallpapers(subreddit, count, time, sort_method, width, height):
         random.shuffle(os.listdir(datapath))
         image_path = datapath + '/' + random.choice(os.listdir(datapath))
 
-        # print("Setting up wallpaper %s", image_path)
+        print("Setting up wallpaper %s", image_path)
         if platform.system() == 'Darwin':
             set_wallpaper_in_osx(image_path)
         elif platform.system() == 'Windows':
@@ -170,7 +170,7 @@ def reddit_wallpapers(subreddit, count, time, sort_method, width, height):
             print('Platform not recognized')
             sys.exit()
 
-        # print("DONE")
+        print("DONE")
         sleep(time * 60)
 
 
@@ -187,7 +187,7 @@ def main():
     parser.add_argument("-s", "--sort", default="new", type=str, nargs='?',
                         help="sort methods, values are new, hot, controversial")
     parser.add_argument("-w", "--width", default=1920 ,type=int, nargs='?', help="Select minimum width of the images(in px)")
-    parser.add_argument("-h", "--height", default=1080 ,type=int, nargs='?', help="Select minimum height of the images(in px)")
+    parser.add_argument("-ht", "--height", default=1080 ,type=int, nargs='?', help="Select minimum height of the images(in px)")
     args = parser.parse_args()
 
     subreddit = args.subreddit
