@@ -7,6 +7,7 @@ import subprocess
 import random
 import platform
 import sys
+import ctypes
 from time import sleep
 from PIL import Image
 from io import BytesIO
@@ -62,8 +63,8 @@ def set_wallpaper_in_linux(image_path):
 
 def set_wallpaper_in_windows(image_path):
     SPI_SETDESKWALLPAPER = 20
-    ctypes.windll.user32.SystemParametersInfoA(
-        SPI_SETDESKWALLPAPER, 0, image_path, 3)
+    ctypes.windll.user32.SystemParametersInfoW(
+        SPI_SETDESKWALLPAPER, 0, image_path, 0)
 
 
 def set_wallpaper_in_osx(image_path):
